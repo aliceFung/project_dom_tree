@@ -89,7 +89,7 @@ class DOMReader
   end
 
   def build_tree(parent_node, doc)
-    #break if doc.empty?
+    return if doc.empty?
     #makes nodes until entire document is done!
     new_node = data_extractor(doc, parent_node)
     #updated_doc #???
@@ -103,8 +103,10 @@ class DOMReader
     return if nil
     current_parent = parent_node
     puts "restarting data_extractor"
+    start = nil
     subset_data.each_with_index do |element, index|
       if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
+        puts "regex says #{element} is a tag *************"
         child_node = build_child(element,current_parent)
         puts "I am #{child_node}"
         end_tag_index = find_matching_tag(subset_data, index)
@@ -117,18 +119,20 @@ class DOMReader
         if subset_data.length > 3
           text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
         else
-          text1 = element
+          text1 = subset_data[1]
           data2 = []
         end
         child_node.text = text1
         puts "CHILD!!!!!!! #{child_node}"
         p child_node
-        current_parent = child_node
-        subset_data = data2
-        data_extractor(subset_data, current_parent) unless subset_data.empty?
+        # current_parent = child_node
+        # subset_data = data2
+        data_extractor(data2, child_node) unless subset_data.empty?
+        #data_extractor(subset_data,)
       end
-
+      break
     end
+    #data_extractor()
 
     #build_tree(current_parent, updated_doc)
 
@@ -209,11 +213,12 @@ class DOMReader
 
   def find_matching_tag(text, index)
     counter = 0
-    p text
+    #p text
     tag = text[index] #<html> => html
     str_tag = tag.match(TAG_TYPE_R).to_s[1..-1]
-    p tag
+    p "#{tag} = tag----------------"
     closing_tag = "</#{str_tag}>"
+    p "#{closing_tag} = closing tag ------------"
     closing_tag_index = nil
     ((index+1)...(text.length)).each do |i|
       if tag == text[i]
