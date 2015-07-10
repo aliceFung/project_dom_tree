@@ -39,23 +39,72 @@ class DOMReader
   def initialize
     # @parser = Parser.new
     file = load_file
-    # root_node(file)
+    process_doc(file) #<=rename
+    root_node(file)
     # @node
   end
 
-  def parent_finder(data)
+  def process_doc(file)
+    file.each do |element|
+      #regex? check for (info, tag, info, tag, info)< method
+        # tagsplitter
+      #
+    end
+    #final processed document!!!! YAY!
+  end
+
+  def check_info_tag_combo(string)
+    #regex? check for (info, tag, info, tag, info)< method
+    #    ^(.*?)<\w+>(.*?)<\/\w+>(.*?)$
+    #<li>One header</li>
+    #testing<span> here more words </span> end.
+    #hello
+  end
+
+  #how to stop when no more tags
+  def build_tree
+    #makes nodes until entire document is done!
+    #until node.children.nil?
+    #go through processed doc; if tag, make node with children
+    #should go through whole doc
+  end
+
+  def tag_splitter(element)
+    #if element has >1 tag
+    #EDGE CASES:
+    #"<li>One header</li> <= split further?!?! (tag, info, tag)
+    #"testing<span> here </span> end." (info, tag, info, tag, info)
+  end
+
+  def is_tag?(string)
+    #use Regex?!?! to find < and > for tag identification
+
+    #return true if match
+  end
+
+
+  def node_maker(data, parent_node)
 
     (0...data.length).each do |idx|
 
-      if data[idx].is_tag?
+      if data[idx].is_tag? #separates text data and children
         index = find_matching_tag(idx)
         data_extractor(data[idx..index])
+        #tag.text, and (tag.children= raw data)
+        #break
       end
     end
-    #
+    #other info for tag from parser
+    #Tag.new(hash[type], hash[classes], hash...)
+    #tag.parent = parent_node
 
-    #returns all the data inside two tags
+    #?returns all the data inside two tags?
 
+  end
+
+  def parser(obj, idx_of_opening_tag)
+    #parses tag information to put into node
+    #assign to tag object hash[type]= , hash[classes]
   end
 
   def find_matching_tag(text, index)
@@ -84,13 +133,14 @@ class DOMReader
       if element.is_tag?
         find_matching_tag(index)
         #data_extractor()
+        #children to be made << data(index..closing)
       else
         #Tag.text << element
       end
 
     end
-
-
+    #returns text attr for node creation
+    #list of children for this node
 
 
   end
@@ -103,6 +153,8 @@ class DOMReader
 
   def root_node(file)
     document = Tag.new(nil, nil, nil, nil, nil, [], nil)
+    #creates root node w/ child of entire document
+    #calls on node_creater w/ docdata & parent = root_node
   end
 
   def build_child(parent_node)
@@ -113,9 +165,6 @@ class DOMReader
 
   end
 
-  def build_tree
-
-  end
 
 end
 
