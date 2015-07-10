@@ -33,11 +33,13 @@
 # Captures op, closing tags, and everything inside: <[^<>]*>[^<>]*<\/[^<>]*>
 # Finds an html tag: <[^<>]*>
 
-Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent)
+Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent, :raw_data)
 
 class DOMReader
 
-  TAG_RGX = /<[^<>]*>/
+  attr_reader :root
+
+  TAG_RGX = /<[^<>]*?>/
   CLASSES_R = /class\s*=\s*'([\w\s]*)'/
   TAG_TYPE_R = /<(\w*)\b/
   ID_R = /id\s*=\s*'([\w\s]*)'/
@@ -47,15 +49,14 @@ class DOMReader
   def initialize
     # @parser = Parser.new
     file = load_file
-    @processed_doc = process_doc(file) #<=rename
-    @root = create_root_node
-    build_tree(@root, @processed_doc)
+    processed_doc = process_doc(file) #<=rename
+    @root = Tag.new("Document", nil, 0, "doc", nil, [], nil, processed_doc)
+    #p processed_doc
+    build_tree
   end
 
   def process_doc(file)
     processed_doc = file.map do |element|
-      #regex? check for (info, tag, info, tag, info)< method
-      #puts composite?(element)
       if composite?(element)
         element = tag_splitter(element)
       else
@@ -64,8 +65,6 @@ class DOMReader
     end
     processed_doc.flatten!
     processed_doc -= ["", "<!doctype html>"]
-    #puts @processed_doc
-    #final processed document!!!! YAY!
   end
 
   def composite?(string)
@@ -86,55 +85,103 @@ class DOMReader
 
   end
 
-  def build_tree(parent_node, doc)
-    #break if doc.empty?
-    #makes nodes until entire document is done!
-    new_node = data_extractor(doc, parent_node)
-    #updated_doc #???
-    #build_tree(new_node, updated_doc)
-    #until node.children.nil?
-    #go through processed doc; if tag, make node with children
-    #should go through whole doc
+  def build_tree
+    queue = [@root]
+
+    until queue.empty?
+      current_node = queue.shift
+      html_data_array = current_node.raw_data
+      while contains_children?(html_data_array)
+        full_tag = html_data_array[0]
+        tag_type = parse_tag_type(full_tag)
+        tag_classes = parse_classes(full_tag)
+        tag_name = parse_name(full_tag)
+        tag_id = parse_id(full_tag)
+        tag_text, child_html_data = get_text(html_data_array)
+        new_tag = Tag.new(tag_type,tag_classes, tag_id, tag_name, tag_text, [], current_node, child_html_data[1..-2])
+        html_data_array = child_html_data
+        current_node.children << new_tag
+        queue << new_tag
+      end
+    end
+  end
+
+  def contains_children?(array)
+
+    array.each do |element|
+      return true if is_tag?(element) && !closing_tag?(element)
+    end
+
+    return false
+
+  end
+
+
+  # def build_child(string, parent_node)
+
+  #   new_tag = parse_tag(string)
+  #   new_tag.parent = parent_node
+  #   new_tag
+  # end
+
+  def parse_tag_type(string)
+    match = string.match(TAG_TYPE_R)
+    match.captures[0] unless match.nil?
+  end
+
+  def parse_classes(string)
+    str_class = string.match(CLASSES_R)#already an array
+    t.classes = str_class.captures.join.split(" ") unless str_class.nil?
+  end
+
+  def parse_name(string)
+    str_name = string.match(NAME_R)
+    t.name = str_name.captures[0] unless str_name.nil?
+  end
+
+  def parse_id(string)
+    str_id = string.match(ID_R)
+    t.id = str_id.captures[0] unless str_id.nil?
   end
 
   def data_extractor(subset_data, parent_node)
-    return if subset_data.empty?
-    #if not a tag << Tag.text
-    #if it's a tag - skip from tag to closing matching tag
-    #keep going for rest of data...
+    return if nil
     current_parent = parent_node
+    puts "restarting data_extractor"
+    start = nil
     subset_data.each_with_index do |element, index|
-
-      puts "Current element is #{element} at index #{index}"
-
       if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
+        puts "regex says #{element} is a tag *************"
         child_node = build_child(element,current_parent)
         puts "I am #{child_node}"
         end_tag_index = find_matching_tag(subset_data, index)
+        puts "*****************"
+        puts "#{end_tag_index} is end_tag_index"
         puts "------------------------------------------"
         puts "This is the data we are trying to get text from"
         p subset_data[(index+1)..(end_tag_index-1)]
         puts "------------------------------------------"
-        text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)]) if subset_data.length > 1
+        if subset_data.length > 3
+          text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
+        else
+          text1 = subset_data[1]
+          data2 = []
+        end
         child_node.text = text1
-        #data_extractor()
-        #children to be made << data(index..closing)
-        current_parent = child_node
-        subset_data = data2
-        data_extractor(subset_data, current_parent) unless subset_data.empty?
+        puts "CHILD!!!!!!! #{child_node}"
+        p child_node
+        # current_parent = child_node
+        # subset_data = data2
+        data_extractor(data2, child_node) unless subset_data.empty?
+        #data_extractor(subset_data,)
       end
-
+      break
     end
-
-    #build_tree(current_parent, updated_doc)
-
-    #returns text attr for node creation
-    #list of children for this node
   end
 
 
   def get_text(data) #and not text
-    children_data=[]
+    children_data = []
     counter = 0
     text_results = []
     data.each do |element|
@@ -146,10 +193,10 @@ class DOMReader
         counter += 1
         children_data << element
         puts "We've successfully added #{element} to child data"
-      elsif !is_tag?(element) && counter !=0
+      elsif !is_tag?(element) && counter != 1
         children_data << element
         puts "We've successfully added #{element} to child data"
-      elsif counter == 0
+      elsif counter == 1
         text_results << element
         puts "**We've successfully added #{element} to text data**"
       end
@@ -189,27 +236,16 @@ class DOMReader
     string.match(CLOSING_TAG_RGX).is_a?(MatchData)
   end
 
-  def parse_tag(string)
-    t = Tag.new(nil, nil, nil, nil, nil, [], nil)
-    tag = string.match(TAG_TYPE_R).captures.to_s #returns an array
-    t.type = tag
-
-    str_class = string.match(CLASSES_R)#already an array
-    t.classes = str_class.captures.join.split(" ") unless str_class.nil?
-    str_id = string.match(ID_R)
-    t.id = str_id.captures[0] unless str_id.nil?
-    str_name = string.match(NAME_R)
-    t.name = str_name.captures[0] unless str_name.nil?
-    t
-  end
+  
 
   def find_matching_tag(text, index)
     counter = 0
-    p text
+    #p text
     tag = text[index] #<html> => html
     str_tag = tag.match(TAG_TYPE_R).to_s[1..-1]
-    p tag
+    p "#{tag} = tag----------------"
     closing_tag = "</#{str_tag}>"
+    p "#{closing_tag} = closing tag ------------"
     closing_tag_index = nil
     ((index+1)...(text.length)).each do |i|
       if tag == text[i]
@@ -232,21 +268,6 @@ class DOMReader
     file = File.open("../test.html", "r")
     doc = file.readlines
     doc.map! { |item| item.strip }
-  end
-
-  def create_root_node
-    Tag.new("Document", nil, 0, nil, nil, [], nil)
-    #creates root node w/ child of entire document
-    #calls on node_creater w/ docdata & parent = root_node
-  end
-
-  def build_child(string, parent_node)
-
-    new_tag = parse_tag(string)
-    new_tag.parent = parent_node
-    new_tag
-    #parent_node.text
-
   end
 
 
