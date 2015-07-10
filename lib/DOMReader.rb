@@ -30,11 +30,14 @@
 # data structure for tree: struct (.methods) vs. hash (child org.?)
 # Edge cases:
 #              nested tags -> We will set up a counter that starts at 0 for the beginning of the tag and if we find a tag of the same type we add to the counter, subtract when we find a closing tag, and actually "find" the closing tag when we find a closing tag and the counter is 0
+# Captures op, closing tags, and everything inside: <[^<>]*>[^<>]*<\/[^<>]*>
+# Finds an html tag: <[^<>]*>
 
 Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent)
 
 class DOMReader
 
+  TAG_RGX = /<[^<>]*>/
 
   def initialize
     # @parser = Parser.new
@@ -45,20 +48,37 @@ class DOMReader
   end
 
   def process_doc(file)
-    file.each do |element|
+    @processed_doc = file.map do |element|
       #regex? check for (info, tag, info, tag, info)< method
-        # tagsplitter
-      #
+      #puts composite?(element)
+      if composite?(element)
+        element = tag_splitter(element)
+      else
+        element
+      end
     end
+    @processed_doc.flatten!
+    @processed_doc -= [""]
+    #puts @processed_doc
     #final processed document!!!! YAY!
   end
 
-  def check_info_tag_combo(string)
-    #regex? check for (info, tag, info, tag, info)< method
-    #    ^(.*?)<\w+>(.*?)<\/\w+>(.*?)$
-    #<li>One header</li>
-    #testing<span> here more words </span> end.
-    #hello
+  def composite?(string)
+    match = string.match(TAG_RGX).to_s
+
+    if match.length == 0
+      #No matches, string is text only
+      return false
+    elsif match == string
+      # string is tag only
+      return false
+    else
+      # string is composite
+      return true
+    end
+
+    #match.length != 0 && match != string
+
   end
 
   #how to stop when no more tags
@@ -74,6 +94,17 @@ class DOMReader
     #EDGE CASES:
     #"<li>One header</li> <= split further?!?! (tag, info, tag)
     #"testing<span> here </span> end." (info, tag, info, tag, info)
+    match = element.match(TAG_RGX).to_s
+    return element if match.length == 0 || match == element
+    arr = element.partition(match)
+    arr.map! do |string|
+      if composite?(string)
+        tag_splitter(string)
+      else
+        string
+      end
+    end
+    arr
   end
 
   def is_tag?(string)
@@ -167,6 +198,8 @@ class DOMReader
 
 
 end
+
+DOMReader.new
 
 class NodeRenderer
 
