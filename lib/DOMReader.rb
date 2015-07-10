@@ -42,13 +42,14 @@ class DOMReader
   TAG_TYPE_R = /<(\w*)\b/
   ID_R = /id\s*=\s*'([\w\s]*)'/
   NAME_R = /name\s*=\s*'([\w\s]*)'/
+  CLOSING_TAG_RGX = /<\/[^<>]*?>/
 
   def initialize
     # @parser = Parser.new
     file = load_file
     @processed_doc = process_doc(file) #<=rename
     @root = create_root_node
-    build_tree(@root)
+    build_tree(@root, @processed_doc)
   end
 
   def process_doc(file)
@@ -85,14 +86,66 @@ class DOMReader
 
   end
 
-  #how to stop when no more tags
-  def build_tree(parent_node)
+  def build_tree(parent_node, doc)
+    #break if doc.empty?
     #makes nodes until entire document is done!
-    new_node = data_extractor
-    new_node.parent = parent_node
+    new_node = data_extractor(doc, parent_node)
+    #updated_doc #???
+    #build_tree(new_node, updated_doc)
     #until node.children.nil?
     #go through processed doc; if tag, make node with children
     #should go through whole doc
+  end
+
+  def data_extractor(subset_data, parent_node)
+    return if subset_data.empty?
+    #if not a tag << Tag.text
+    #if it's a tag - skip from tag to closing matching tag
+    #keep going for rest of data...
+    current_parent = parent_node
+    subset_data.each_with_index do |element, index|
+
+      if is_tag?(element)
+        child_node = build_child(element,current_parent)
+        end_tag_index = find_matching_tag(subset_data, index)
+        text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
+        child_node.text = text1
+        #data_extractor()
+        #children to be made << data(index..closing)
+        current_parent = child_node
+        subset_data = data2
+      end
+
+    end
+    data_extractor(subset_data, current_parent)
+
+    #build_tree(current_parent, updated_doc)
+
+    #returns text attr for node creation
+    #list of children for this node
+  end
+
+
+  def get_text(data) #and not text
+    children_data=[]
+    counter = 0
+    text_results = []
+    data.each do |element|
+      if is_tag?(element)
+        counter += 1
+        children_data << element
+      elsif !is_tag?(element) && counter !=0
+        children_data << element
+      elsif closing_tag?(element)
+        counter -= 1
+        children_data << element
+      elsif counter == 0
+        text_results << element
+      end
+    end
+
+    return text_results, children_data
+
   end
 
   def tag_splitter(element)
@@ -120,98 +173,48 @@ class DOMReader
   end
 
 
-  def node_maker(data, parent_node)
 
-    (0...data.length).each do |idx|
-
-      if data[idx].is_tag? #separates text data and children
-        index = find_matching_tag(idx)
-        data_extractor(data[idx..index])
-        #tag.text, and (tag.children= raw data)
-        #break
-      end
-    end
-    #other info for tag from parser
-    #Tag.new(hash[type], hash[classes], hash...)
-    #tag.parent = parent_node
-
-    #?returns all the data inside two tags?
-
-  end
-
-  def parser(obj, idx_of_opening_tag)
-    #parses tag information to put into node
-    #assign to tag object hash[type]= , hash[classes]
+  def closing_tag?(string)
+    string.match(CLOSING_TAG_RGX).is_a?(MatchData)
   end
 
   def parse_tag(string)
     t = Tag.new(nil, nil, nil, nil, nil, [], nil)
     tag = string.match(TAG_TYPE_R).captures.to_s #returns an array
     t.type = tag[0]
-    str_class = string.match(CLASSES_R).captures #already an array
-    t.classes = str_class.join.split(" ")
-    t.id = string.match(ID_R).captures[0]
-    t.name = string.match(NAME_R).captures[0]
+
+    str_class = string.match(CLASSES_R)#already an array
+    t.classes = str_class.captures.join.split(" ") unless str_class.nil?
+    str_id = string.match(ID_R)
+    t.id = str_id.captures[0] unless str_id.nil?
+    str_name = string.match(NAME_R)
+    t.name = str_name.captures[0] unless str_name.nil?
     t
   end
 
   def find_matching_tag(text, index)
     counter = 0
-    tag = text[index]
-    closing_tag = "</#{tag}>"
-    (index...(text.length)).each do |i|
-      # if tag == tag
-      #  counter += 1
-      # if tag == closing_tag && counter != 0
-      #  counter -= 1
-      #if tag == closing_tag && counter = 0
-      #   closing_tag_index = i
-      #   break
+    p text
+    tag = text[index] #<html> => html
+    str_tag = tag.match(TAG_TYPE_R).to_s[1..-1]
+    p tag
+    closing_tag = "</#{str_tag}>"
+    closing_tag_index = nil
+    ((index+1)...(text.length)).each do |i|
+      if tag == text[i]
+       counter += 1
+       puts "tag = text[i]"
+      elsif text[i] == closing_tag && counter != 0
+       counter -= 1
+       puts "tag = text[i] && counter !=0"
+      elsif text[i] == closing_tag && counter == 0
+        closing_tag_index = i
+        puts "I'm the closing tag"
+      end
     end
     closing_tag_index
   end
 
-  def data_extractor(data)
-
-    #if not a tag << Tag.text
-    #if it's a tag - skip from tag to closing matching tag
-    #keep going for rest of data...
-    current_parent = @root
-    data.each_with_index do |element, index|
-
-      if element.is_tag?
-        child_node = build_child(element,current_parent)
-        end_tag_index = find_matching_tag(index)
-        child_node.text = get_text(data[index..end_tag_index])
-        #data_extractor()
-        #children to be made << data(index..closing)
-        current_parent = child_node
-      end
-
-    end
-    #returns text attr for node creation
-    #list of children for this node
-
-
-  end
-
-  def get_text(data)
-
-    counter = 0
-    text_results = []
-    data.each do |element|
-      if is_tag?(element)
-        counter += 1
-      elsif closing_tag?(element)
-        counter -= 1
-      elsif counter == 0
-        text_results << element
-      end
-    end
-
-    text_results
-
-  end
 
   def load_file
     file = File.open("test.html", "r")
@@ -235,13 +238,12 @@ class DOMReader
 
 
 end
+# end
 
-DOMReader.new
+# class NodeRenderer
 
-class NodeRenderer
+# end
 
-end
+# class TreeSearcher
 
-class TreeSearcher
-
-end
+# end
