@@ -90,9 +90,13 @@ class DOMReader
   def build_tree
     current_node = @root
     @processed_doc.each do |item|
-      if is_tag?(item) && !closing_tag?(item)
-        current_node = Tag.new(item, current_node, [], [])
-      elsif closing_tag?(item)
+      puts item
+      if item.include?("<") && !item.include?("</")
+        new_node = Tag.new(item, current_node, [], [])
+        current_node.children << new_node
+        current_node = new_node
+        puts "new node"
+      elsif item.include?("</")
         current_node = current_node.parent
       else
         current_node.text = item
