@@ -37,7 +37,9 @@ Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent)
 
 class DOMReader
 
-  TAG_RGX = /<[^<>]*>/
+  attr_reader :root
+
+  TAG_RGX = /<[^<>]*?>/
   CLASSES_R = /class\s*=\s*'([\w\s]*)'/
   TAG_TYPE_R = /<(\w*)\b/
   ID_R = /id\s*=\s*'([\w\s]*)'/
@@ -98,25 +100,29 @@ class DOMReader
   end
 
   def data_extractor(subset_data, parent_node)
-    return if subset_data.empty?
-    #if not a tag << Tag.text
-    #if it's a tag - skip from tag to closing matching tag
-    #keep going for rest of data...
+    return if nil
     current_parent = parent_node
+    puts "restarting data_extractor"
     subset_data.each_with_index do |element, index|
-
       if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
         child_node = build_child(element,current_parent)
         puts "I am #{child_node}"
         end_tag_index = find_matching_tag(subset_data, index)
+        puts "*****************"
+        puts "#{end_tag_index} is end_tag_index"
         puts "------------------------------------------"
         puts "This is the data we are trying to get text from"
         #p subset_data[(index+1)..(end_tag_index-1)]
         puts "------------------------------------------"
-        text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)]) if subset_data.length > 1
+        if subset_data.length > 3
+          text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
+        else
+          text1 = element
+          data2 = []
+        end
         child_node.text = text1
-        #data_extractor()
-        #children to be made << data(index..closing)
+        puts "CHILD!!!!!!! #{child_node}"
+        p child_node
         current_parent = child_node
         subset_data = data2
         data_extractor(subset_data, current_parent) unless subset_data.empty?
