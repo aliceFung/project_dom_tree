@@ -105,13 +105,15 @@ class DOMReader
     current_parent = parent_node
     subset_data.each_with_index do |element, index|
 
+      puts "Current element is #{element} at index #{index}"
+
       if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
         child_node = build_child(element,current_parent)
         puts "I am #{child_node}"
         end_tag_index = find_matching_tag(subset_data, index)
         puts "------------------------------------------"
         puts "This is the data we are trying to get text from"
-        #p subset_data[(index+1)..(end_tag_index-1)]
+        p subset_data[(index+1)..(end_tag_index-1)]
         puts "------------------------------------------"
         text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)]) if subset_data.length > 1
         child_node.text = text1
@@ -140,11 +142,11 @@ class DOMReader
         counter -= 1
         children_data << element
         puts "We've successfully added #{element} to child data"
-      elsif !is_tag?(element) && counter !=0
-        children_data << element
-        puts "We've successfully added #{element} to child data"
       elsif is_tag?(element)
         counter += 1
+        children_data << element
+        puts "We've successfully added #{element} to child data"
+      elsif !is_tag?(element) && counter !=0
         children_data << element
         puts "We've successfully added #{element} to child data"
       elsif counter == 0
