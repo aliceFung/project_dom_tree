@@ -89,6 +89,7 @@ class DOMReader
 
   end
 
+
   def build_tree
  #   binding.pry
 
