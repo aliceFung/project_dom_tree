@@ -142,6 +142,17 @@ class DOMReader
     #assign to tag object hash[type]= , hash[classes]
   end
 
+  def parse_tag(string, parent)
+    t = Tag.new(nil, nil, nil, nil, nil, [], parent)
+    tag = string.match(TAG_TYPE_R).captures.to_s #returns an array
+    t.type = tag[0]
+    str_class = string.match(CLASSES_R).captures #already an array
+    t.classes = str_class.join.split(" ")
+    t.id = string.match(ID_R).captures[0]
+    t.name = string.match(NAME_R).captures[0]
+    t
+  end
+
   def find_matching_tag(text, index)
     counter = 0
     tag = text[index]
