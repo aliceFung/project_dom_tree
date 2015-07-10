@@ -84,7 +84,7 @@ class DOMReader
         @nodes +=1
         current_node.children << new_node
         current_node = new_node
-        puts "new node"
+        # puts "new node"
       elsif item.include?("</")
         current_node = current_node.parent
       else
@@ -129,7 +129,7 @@ class DOMReader
   end
 
   def load_file
-    file = File.open("test.html", "r")
+    file = File.open("../test.html", "r")
     doc = file.readlines
     doc.map! { |item| item.strip }
   end
