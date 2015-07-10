@@ -48,7 +48,7 @@ class DOMReader
     file = load_file
     @processed_doc = process_doc(file) #<=rename
     @root = create_root_node
-    build_child(@root)
+    build_tree(@root)
   end
 
   def process_doc(file)
@@ -62,7 +62,7 @@ class DOMReader
       end
     end
     processed_doc.flatten!
-    processed_doc -= [""]
+    processed_doc -= ["", "<!doctype html>"]
     #puts @processed_doc
     #final processed document!!!! YAY!
   end
@@ -86,8 +86,10 @@ class DOMReader
   end
 
   #how to stop when no more tags
-  def build_tree
+  def build_tree(parent_node)
     #makes nodes until entire document is done!
+    new_node = data_extractor
+    new_node.parent = parent_node
     #until node.children.nil?
     #go through processed doc; if tag, make node with children
     #should go through whole doc
@@ -142,8 +144,8 @@ class DOMReader
     #assign to tag object hash[type]= , hash[classes]
   end
 
-  def parse_tag(string, parent)
-    t = Tag.new(nil, nil, nil, nil, nil, [], parent)
+  def parse_tag(string)
+    t = Tag.new(nil, nil, nil, nil, nil, [], nil)
     tag = string.match(TAG_TYPE_R).captures.to_s #returns an array
     t.type = tag[0]
     str_class = string.match(CLASSES_R).captures #already an array
@@ -174,20 +176,40 @@ class DOMReader
     #if not a tag << Tag.text
     #if it's a tag - skip from tag to closing matching tag
     #keep going for rest of data...
+    current_parent = @root
     data.each_with_index do |element, index|
 
       if element.is_tag?
-        find_matching_tag(index)
+        child_node = build_child(element,current_parent)
+        end_tag_index = find_matching_tag(index)
+        child_node.text = get_text(data[index..end_tag_index])
         #data_extractor()
         #children to be made << data(index..closing)
-      else
-        #Tag.text << element
+        current_parent = child_node
       end
 
     end
     #returns text attr for node creation
     #list of children for this node
 
+
+  end
+
+  def get_text(data)
+
+    counter = 0
+    text_results = []
+    data.each do |element|
+      if is_tag?(element)
+        counter += 1
+      elsif closing_tag?(element)
+        counter -= 1
+      elsif counter == 0
+        text_results << element
+      end
+    end
+
+    text_results
 
   end
 
@@ -203,10 +225,10 @@ class DOMReader
     #calls on node_creater w/ docdata & parent = root_node
   end
 
-  def build_child(parent_node)
+  def build_child(string, parent_node)
 
-    #parser(@doc)
-
+    new_tag = parse_tag(string)
+    new_tag.parent = parent_node
     #parent_node.text
 
   end
