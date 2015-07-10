@@ -105,19 +105,24 @@ class DOMReader
     current_parent = parent_node
     subset_data.each_with_index do |element, index|
 
-      if is_tag?(element)
+      if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
         child_node = build_child(element,current_parent)
+        puts "I am #{child_node}"
         end_tag_index = find_matching_tag(subset_data, index)
+        puts "------------------------------------------"
+        puts "This is the data we are trying to get text from"
+        p subset_data[(index+1)..(end_tag_index-1)]
+        puts "------------------------------------------"
         text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
         child_node.text = text1
         #data_extractor()
         #children to be made << data(index..closing)
         current_parent = child_node
         subset_data = data2
+        data_extractor(subset_data, current_parent) unless subset_data.empty?
       end
 
     end
-    data_extractor(subset_data, current_parent)
 
     #build_tree(current_parent, updated_doc)
 
@@ -131,16 +136,20 @@ class DOMReader
     counter = 0
     text_results = []
     data.each do |element|
-      if is_tag?(element)
-        counter += 1
-        children_data << element
-      elsif !is_tag?(element) && counter !=0
-        children_data << element
-      elsif closing_tag?(element)
+      if closing_tag?(element)
         counter -= 1
         children_data << element
+        puts "We've successfully added #{element} to child data"
+      elsif !is_tag?(element) && counter !=0
+        children_data << element
+        puts "We've successfully added #{element} to child data"
+      elsif is_tag?(element)
+        counter += 1
+        children_data << element
+        puts "We've successfully added #{element} to child data"
       elsif counter == 0
         text_results << element
+        puts "**We've successfully added #{element} to text data**"
       end
     end
 
@@ -203,21 +212,22 @@ class DOMReader
     ((index+1)...(text.length)).each do |i|
       if tag == text[i]
        counter += 1
-       puts "tag = text[i]"
+       #puts "tag = text[i]"
       elsif text[i] == closing_tag && counter != 0
        counter -= 1
-       puts "tag = text[i] && counter !=0"
+       #puts "tag = text[i] && counter !=0"
       elsif text[i] == closing_tag && counter == 0
         closing_tag_index = i
-        puts "I'm the closing tag"
+        #puts "I'm the closing tag"
       end
     end
+    p closing_tag_index
     closing_tag_index
   end
 
 
   def load_file
-    file = File.open("test.html", "r")
+    file = File.open("../test.html", "r")
     doc = file.readlines
     doc.map! { |item| item.strip }
   end
@@ -232,6 +242,7 @@ class DOMReader
 
     new_tag = parse_tag(string)
     new_tag.parent = parent_node
+    new_tag
     #parent_node.text
 
   end
