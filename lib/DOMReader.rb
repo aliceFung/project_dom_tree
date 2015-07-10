@@ -28,6 +28,8 @@
 #   => search_children(node)
 #   => search_ancester(node)
 # data structure for tree: struct (.methods) vs. hash (child org.?)
+# Edge cases:
+#              nested tags -> We will set up a counter that starts at 0 for the beginning of the tag and if we find a tag of the same type we add to the counter, subtract when we find a closing tag, and actually "find" the closing tag when we find a closing tag and the counter is 0
 
 Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent)
 
@@ -41,10 +43,62 @@ class DOMReader
     # @node
   end
 
+  def parent_finder(data)
+
+    (0...data.length).each do |idx|
+
+      if data[idx].is_tag?
+        index = find_matching_tag(idx)
+        data_extractor(data[idx..index])
+      end
+    end
+    #
+
+    #returns all the data inside two tags
+
+  end
+
+  def find_matching_tag(text, index)
+    counter = 0
+    tag = text[index]
+    closing_tag = "</#{tag}>"
+    (index...(text.length)).each do |i|
+      # if tag == tag
+      #  counter += 1
+      # if tag == closing_tag && counter != 0
+      #  counter -= 1
+      #if tag == closing_tag && counter = 0
+      #   closing_tag_index = i
+      #   break
+    end
+    closing_tag_index
+  end
+
+  def data_extractor(data)
+
+    #if not a tag << Tag.text
+    #if it's a tag - skip from tag to closing matching tag
+    #keep going for rest of data...
+    data.each_with_index do |element, index|
+
+      if element.is_tag?
+        find_matching_tag(index)
+        #data_extractor()
+      else
+        #Tag.text << element
+      end
+
+    end
+
+
+
+
+  end
+
   def load_file
     file = File.open("test.html", "r")
-    string = file.read
-    p string
+    @doc = file.readlines
+    @doc.map! { |item| item.strip }
   end
 
   def root_node(file)
@@ -52,7 +106,10 @@ class DOMReader
   end
 
   def build_child(parent_node)
-    parent_node.text
+
+    #parser(@doc)
+
+    #parent_node.text
 
   end
 
