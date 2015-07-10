@@ -99,7 +99,7 @@ class DOMReader
         tag_id = parse_id(full_tag)
         tag_text, child_html_data = get_text(html_data_array)
         new_tag = Tag.new(tag_type,tag_classes, tag_id, tag_name, tag_text, [], current_node, child_html_data[1..-2])
-        html_data_array = child_html_data
+        html_data_array = child_html_data[1..-2]
         current_node.children << new_tag
         queue << new_tag
       end
