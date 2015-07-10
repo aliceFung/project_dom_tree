@@ -111,9 +111,9 @@ class DOMReader
         end_tag_index = find_matching_tag(subset_data, index)
         puts "------------------------------------------"
         puts "This is the data we are trying to get text from"
-        p subset_data[(index+1)..(end_tag_index-1)]
+        #p subset_data[(index+1)..(end_tag_index-1)]
         puts "------------------------------------------"
-        text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
+        text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)]) if subset_data.length > 1
         child_node.text = text1
         #data_extractor()
         #children to be made << data(index..closing)
@@ -190,7 +190,7 @@ class DOMReader
   def parse_tag(string)
     t = Tag.new(nil, nil, nil, nil, nil, [], nil)
     tag = string.match(TAG_TYPE_R).captures.to_s #returns an array
-    t.type = tag[0]
+    t.type = tag
 
     str_class = string.match(CLASSES_R)#already an array
     t.classes = str_class.captures.join.split(" ") unless str_class.nil?
