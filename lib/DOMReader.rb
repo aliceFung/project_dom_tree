@@ -38,17 +38,21 @@ Tag = Struct.new(:type, :classes, :id, :name, :text, :children, :parent)
 class DOMReader
 
   TAG_RGX = /<[^<>]*>/
+  CLASSES_R = /class\s*=\s*'([\w\s]*)'/
+  TAG_TYPE_R = /<(\w*)\b/
+  ID_R = /id\s*=\s*'([\w\s]*)'/
+  NAME_R = /name\s*=\s*'([\w\s]*)'/
 
   def initialize
     # @parser = Parser.new
     file = load_file
-    process_doc(file) #<=rename
-    root_node(file)
-    # @node
+    @processed_doc = process_doc(file) #<=rename
+    @root = create_root_node
+    build_child(@root)
   end
 
   def process_doc(file)
-    @processed_doc = file.map do |element|
+    processed_doc = file.map do |element|
       #regex? check for (info, tag, info, tag, info)< method
       #puts composite?(element)
       if composite?(element)
@@ -57,8 +61,8 @@ class DOMReader
         element
       end
     end
-    @processed_doc.flatten!
-    @processed_doc -= [""]
+    processed_doc.flatten!
+    processed_doc -= [""]
     #puts @processed_doc
     #final processed document!!!! YAY!
   end
@@ -109,7 +113,7 @@ class DOMReader
 
   def is_tag?(string)
     #use Regex?!?! to find < and > for tag identification
-
+    string.match(TAG_RGX).is_a?(MatchData)
     #return true if match
   end
 
@@ -178,12 +182,12 @@ class DOMReader
 
   def load_file
     file = File.open("test.html", "r")
-    @doc = file.readlines
-    @doc.map! { |item| item.strip }
+    doc = file.readlines
+    doc.map! { |item| item.strip }
   end
 
-  def root_node(file)
-    document = Tag.new(nil, nil, nil, nil, nil, [], nil)
+  def create_root_node
+    Tag.new("Document", nil, 0, nil, nil, [], nil)
     #creates root node w/ child of entire document
     #calls on node_creater w/ docdata & parent = root_node
   end
