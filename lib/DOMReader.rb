@@ -116,8 +116,8 @@ class DOMReader
         subset_data = data2
       end
 
+      data_extractor(subset_data, current_parent)
     end
-    data_extractor(subset_data, current_parent)
 
     #build_tree(current_parent, updated_doc)
 
