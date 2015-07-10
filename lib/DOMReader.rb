@@ -103,7 +103,7 @@ class DOMReader
     return if nil
     current_parent = parent_node
     puts "restarting data_extractor"
-    start = nil
+    other_sibling_data =[]
     subset_data.each_with_index do |element, index|
       if is_tag?(element) && !closing_tag?(element) && !subset_data.empty?
         puts "regex says #{element} is a tag *************"
@@ -118,6 +118,7 @@ class DOMReader
         puts "------------------------------------------"
         if subset_data.length > 3
           text1, data2 = get_text(subset_data[(index+1)..(end_tag_index-1)])
+          other_sibling_data = [end_tag_index+1..-1]
         else
           text1 = subset_data[1]
           data2 = []
@@ -128,7 +129,7 @@ class DOMReader
         # current_parent = child_node
         # subset_data = data2
         data_extractor(data2, child_node) unless subset_data.empty?
-        #data_extractor(subset_data,)
+        data_extractor(other_sibling_data, parent_node)
       end
       break
     end
