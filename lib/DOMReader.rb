@@ -76,10 +76,11 @@ class DOMReader
     current_node = @root
     @processed_doc.each do |item|
       if item.include?("<") && !item.include?("</")
+        tag_type = parse_tag_type(item)
         tag_classes = parse_classes(item)
         tag_name = parse_name(item)
         tag_id = parse_id(item)
-        new_node = Tag.new(item, current_node, [], [], tag_classes, tag_id, tag_name)
+        new_node = Tag.new(tag_type, current_node, [], [], tag_classes, tag_id, tag_name)
         @nodes +=1
         current_node.children << new_node
         current_node = new_node
@@ -135,11 +136,3 @@ class DOMReader
 
 end
 
-
-# class NodeRenderer
-
-# end
-
-# class TreeSearcher
-
-# end
