@@ -88,7 +88,7 @@ class DOMReader
       elsif item.include?("</")
         current_node = current_node.parent
       else
-        current_node.text = item
+        current_node.text << item
       end
     end
   end
@@ -100,18 +100,18 @@ class DOMReader
   end
 
   def parse_classes(string)
-    str_class = string.match(CLASSES_R)#already an array
-    t.classes = str_class.captures.join.split(" ") unless str_class.nil?
+    str_class = string.match(/class="(.*?)"/)#already an array
+    str_class.captures.join.split(" ") unless str_class.nil?
   end
 
   def parse_name(string)
-    str_name = string.match(NAME_R)
-    t.name = str_name.captures[0] unless str_name.nil?
+    str_name = string.match(/name="(.*?)"/)
+    str_name unless str_name.nil?
   end
 
   def parse_id(string)
-    str_id = string.match(ID_R)
-    t.id = str_id.captures[0] unless str_id.nil?
+    str_id = string.match(/id="(.*?)"/)
+    str_id unless str_id.nil?
   end
 
   def tag_splitter(element)

@@ -16,7 +16,7 @@ class TreeSearcher
     until queue.empty?
       current_node = queue.shift
       current_node.children.each { |child| queue << child }
-      if current_node.send(kind) == name
+      if !current_node.send(kind).nil? && current_node.send(kind).include?(name)
         results << current_node
       end
     end
